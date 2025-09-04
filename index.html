@@ -312,17 +312,42 @@
           scrollBottom(); const [emin,emax]=TYPE.ellipsis; await sleep(rand(emin,emax)*TYPE.speed); continue;
         }
 
-        // „Fehlgriff“ (selten): 1–2 Backspaces, dann weiter
-        if(Math.random() < TYPE.correctionChance && b.textContent.length>2){
-          const n = Math.floor(rand(TYPE.correctionBackspaces[0], TYPE.correctionBackspaces[1]+1));
-          for(let k=0;k<n;k++){
-            b.textContent = b.textContent.slice(0,-1);
-            await sleep(70);
-          }
-          await sleep(rand(120,200));
-        }
+       // „Fehlgriff“ (selten): 1–2 Backspaces, kurze Pause, dann dieselben Zeichen wieder tippen
+if (Math.random() < TYPE.correctionChance && b.textContent.length > 2) {
+  // Wie viele Zeichen „verhauen“?
+  const n = Math.min(
+    b.textContent.length,
+    Math.floor(rand(TYPE.correctionBackspaces[0], TYPE.correctionBackspaces[1] + 1))
+  );
 
-        const ch = raw[i++];
+  // Die gelöschten Zeichen merken, damit wir sie gleich wieder tippen
+  const toRestore = b.textContent.slice(-n);
+
+  // Rücktaste animieren
+  for (let k = 0; k < n; k++) {
+    b.textContent = b.textContent.slice(0, -1);
+    scrollBottom();
+    await sleep(60);
+    if (typing.skip) break;
+  }
+
+  // kurze Nachdenk-Pause
+  await sleep(rand(180, 420));
+  if (typing.skip) { /* skip bricht ohnehin die Pausen ab */ }
+
+  // dieselben Zeichen zügig wieder eintippen (fühlt sich wie „korrigiert“ an)
+  for (let k = 0; k < toRestore.length; k++) {
+    b.textContent += toRestore[k];
+    scrollBottom();
+    await sleep(30 + Math.random() * 40);
+    if (typing.skip) break;
+  }
+
+  // Wichtig: Hier KEIN i++ o.ä. – wir haben noch keinen neuen raw-Char verarbeitet.
+  // Also einfach weiter zur nächsten Schleifenrunde.
+  continue;
+}
+
 
         // Zeichen schreiben
         b.textContent += ch;
